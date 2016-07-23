@@ -72,6 +72,7 @@ def createconfig():
             config.write(cfgfile)
     except:
         logger.error("Config file creation failed")
+        logger.error("Please report the issue: https://github.com/Fenisu/ArenaVision_Launcher/issues")
         sys.exit(1)
     return config
 
