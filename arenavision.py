@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import bs4
-import urllib.request
-import subprocess
-import time
-import sys
-import re
 import logging
+import re
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
 
 
 __author__ = "Ignacio Quezada"
@@ -138,6 +139,12 @@ def start_player(player, port):
     return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def get_ip():
+    return [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1],
+                       [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in
+                         [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
+
+
 def cli_match(event_list):
     for i, e in enumerate(event_list):
         print("[%s] %s" % (i, e))
@@ -187,7 +194,7 @@ def cli_channel(match):
         return [False, choice]
 
 
-def cli(event_list, config):
+def cli(event_list, config, server_mode):
     while True:
         check, choice = cli_match(event_list)
         if not check:
@@ -207,24 +214,28 @@ def cli(event_list, config):
             p_sopcast = start_sopcast(sopcast, config['sopcast-p2p-port'], config['sopcast-stream-port'])
             # sopcast exit code 152: error with the stream, try another one.
             # code 147, sopcast exit.
-            logger.info("Going to sleeping %s seconds for cache.", config['cold-start-time'])
 
             counter = 0
             while not p_sopcast.poll():
                 ct = 0
+                logger.info("Going to sleeping %s seconds for cache.", config['cold-start-time'])
                 while ct < int(config['cold-start-time']) and not p_sopcast.poll():
                     print('.', end="", flush=True)
                     time.sleep(1)
                     ct += 1
                 print()
-                if not p_sopcast.poll():
+                if not p_sopcast.poll() and not server_mode:
                     print("Opening player.")
                     p_player = start_player(config['video-player'], config['sopcast-stream-port'])
                     if p_player.returncode == 0:
                         logger.info("Closed player, closing Sopcast, returning to channel menu.")
                         p_sopcast.kill()
-                if counter > 3:
-                    break
+                elif not p_sopcast.poll() and server_mode:
+                    print("Stream available at: http://{}:{}/tv.asf".format(get_ip(), config['sopcast-stream-port']))
+                    input("Press enter to stop stream.")
+                    p_sopcast.kill()
+                if counter > 3 and not server_mode:
+                    p_sopcast.kill()
                 counter += 1
             if p_sopcast.poll() > 0:
                 logger.error("Sopcast closed with code %d. Back to channel menu." % p_sopcast.poll())
