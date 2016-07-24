@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import arenavision
 import argparse
 import configparser
@@ -8,7 +9,7 @@ import sys
 
 __author__ = "Ignacio Quezada"
 
-__version__ = "0.1"
+__version__ = "0.2"
 __maintainer__ = "Ignacio Quezada"
 __email__ = "dreamtrick@gmail.com"
 __status__ = "dev"
