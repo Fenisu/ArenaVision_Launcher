@@ -11,15 +11,13 @@ import urllib.request
 
 __author__ = "Ignacio Quezada"
 
-__version__ = "0.2"
+__version__ = "0.3"
 __maintainer__ = "Ignacio Quezada"
 __email__ = "dreamtrick@gmail.com"
 __status__ = "dev"
 
-user_agent = 'Arenavision for Linux Launcher v0.1'
+user_agent = 'Arenavision for Linux Launcher v{}'.format(__version__)
 headers = {'user-agent': user_agent}
-
-NO_SOPCAST_SUPPORT = "Not working"
 
 # Logging
 logger = logging.getLogger()
@@ -42,11 +40,9 @@ class Event:
         self.league = league
         self.channels = channels
 
-    def __str__(self):
-        return "%s %s - [%s] %s (%s)" % (self.day, self.time, self.type, self.name, '/'.join(self.channels))
-
     def __repr__(self):
-        return "%s %s - [%s] %s (%s)" % (self.day, self.time, self.type, self.name, '/'.join(self.channels))
+        return "{} {} - [{}] ({}) - {} ({})".format(self.day, self.time, self.type, self.league, self.name,
+                                                    '/'.join(self.channels))
 
 
 def get_soup(url):
@@ -54,21 +50,6 @@ def get_soup(url):
     html = urllib.request.urlopen(req).read()
     soup = bs4.BeautifulSoup(html, "html.parser")
     return soup
-
-
-def old_parse_agenda(soup):
-    chart = soup.find_all("div", class_="content")[0].find_all("p")[1]
-    event_list = []
-    for event in chart.get_text().split('\n'):
-        channels = re.findall('(AV2[1-9])', event)  # If there are any sopcast channels, list them.
-        channels.extend(re.findall('(AV3[0-6])', event))  # Find channels 21-36
-        if channels:
-            day, event_time, zone = event.split(': ')[0].split(' ')[:3]
-            event_type = ' '.join(event.split(': ')[0].split(' ')[3:])
-            name = event.split(': ')[1].split(' (')[0]
-            league = re.search("(?<=\().*(?=\))", event).group(0)
-            event_list.append(Event(day, event_time, zone, event_type, name, league, channels))
-    return event_list
 
 
 def parse_agenda(soup):
@@ -87,7 +68,6 @@ def parse_agenda(soup):
                 channels.append(lang)
                 channels.extend(sopcast_channels)
             last_pos = new_pos
-
         if channels:
             day = event[0].text
             event_time, zone = event[1].text.split(' ')
