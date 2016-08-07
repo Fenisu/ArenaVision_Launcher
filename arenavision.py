@@ -19,6 +19,8 @@ __status__ = "dev"
 user_agent = 'Arenavision for Linux Launcher v0.1'
 headers = {'user-agent': user_agent}
 
+NO_SOPCAST_SUPPORT = "Not working"
+
 # Logging
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -80,8 +82,10 @@ def parse_agenda(soup):
         last_pos = 0
         for lang in languages:
             new_pos = chan_list.find(lang)
-            channels.append(lang)
-            channels.extend(re.findall('2[1-9]|3[0-7]', chan_list[last_pos:new_pos]))
+            sopcast_channels = re.findall('S[1-9]|S[0-7]', chan_list[last_pos:new_pos])
+            if sopcast_channels:
+                channels.append(lang)
+                channels.extend(sopcast_channels)
             last_pos = new_pos
 
         if channels:
